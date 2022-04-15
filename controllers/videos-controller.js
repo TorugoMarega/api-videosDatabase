@@ -8,6 +8,7 @@ exports .getVideos = (req, res, next)=>{
             FROM videos v INNER JOIN categorias c
             ON v.categorias_id = c.id`,
             (error, result, fields)=>{
+                conn.release();
                 if (error){ return res.status(500).send({error:error})}
                 const response = {
                     quantidade: result.length,
@@ -15,6 +16,7 @@ exports .getVideos = (req, res, next)=>{
                         return{
                             id_video: video.id,
                             titulo: video.titulo,
+                            url : video.url,
                             descricao: video.descricao,
                             id_categoria: video.categorias_id,
                             nome_categoria: video.nome_categoria,
@@ -80,7 +82,7 @@ exports.getUmVideo = (req, res, next)=>{
             [req.params.id],
 
             (error, result, fields)=>{
-
+                conn.release;
                 if (error){ return res.status(500).send({error:error})}
 
                 if(result.length === 0){
@@ -114,43 +116,74 @@ exports.getUmVideo = (req, res, next)=>{
 exports.patchVideos = (req, res, next)=>{
     mysql.getConnection((error, conn) => {
         if (error){ return res.status(500).send({error:error})}
-
         conn.query(
-            `UPDATE videos
-                SET titulo = ?,
-                    url = ?,
-                    categorias_id = ?,
-                    descricao = ?
-             WHERE id = ?`,
-            [
-                req.body.titulo, 
-                req.body.url,
-                req.body.categorias_id,
-                req.body.descricao,
-                req.body.id
-            ],
-            (error, result, fields)=>{
-                if (error){ return res.status(500).send({error:error})}
+            `SELECT * FROM videos WHERE id = ?`,
+            [req.body.id],
 
-                const response = {
-                    mensagem: 'Video alterado com sucesso',
-                    produtoAtualizado:{
-                        id: req.body.id,
-                        titulo: req.body.titulo,
-                        url: req.body.url,
-                        id_categoria: req.body.categorias_id,
-                        descricao: req.body.descricao,
-                        request:{
-                            tipo: 'POST',
-                            descricao: 'Retorna os detalhes de um video específico',
-                            url: 'http://localhost:3000/videos/' + req.body.id
+            (error, result, fields) =>{
+                if (error){ return res.status(500).send({error:error})}
+                if(result.length === 0){
+                    return res.status(404).send({
+                        mensagem: 'Vídeo não encontrado'
+                    })
+                }
+                else{
+                    if (req.body.titulo == undefined){
+                        req.body.titulo = result[0].titulo;
+                        //console.log('titulo param: '+req.body.titulo) //testa substituição da requisicao
+                    }
+                    if (req.body.url == undefined){
+                        req.body.url = result[0].url;
+                        //console.log('url param: '+req.body.url)
+                    }
+                    if (req.body.categorias_id == undefined){
+                        req.body.categorias_id = result[0].categorias_id;
+                        //console.log('categorias_id param: '+req.body.categorias_id)
+                    }
+                    if (req.body.descricao == undefined){
+                        req.body.descricao = result[0].descricao;
+                        //console.log('descricao param: '+req.body.descricao)
+                    }
+                    conn.query(
+                        `UPDATE videos
+                            SET titulo = ?,
+                                url = ?,
+                                categorias_id = ?,
+                                descricao = ?
+                         WHERE id = ?`,
+                         
+                        [
+                            req.body.titulo, 
+                            req.body.url,
+                            req.body.categorias_id,
+                            req.body.descricao,
+                            req.body.id
+                        ],
+                        (error, result, fields)=>{
+                            conn.release();
+                            if (error){ return res.status(500).send({error:error})}
+            
+                            const response = {
+                                mensagem: 'Video alterado com sucesso',
+                                produtoAtualizado:{
+                                    id: req.body.id,
+                                    titulo: req.body.titulo,
+                                    url: req.body.url,
+                                    id_categoria: req.body.categorias_id,
+                                    descricao: req.body.descricao,
+                                    request:{
+                                        tipo: 'POST',
+                                        descricao: 'Retorna os detalhes de um video específico',
+                                        url: 'http://localhost:3000/videos/' + req.body.id
+                                    }
+                                } 
+                            }         
+                            return res.status(202).send(response);
                         }
-                    } 
-                }         
-                return res.status(202).send(response);
+                    )
+                }
             }
         )
-
     });
 }
 
@@ -159,29 +192,43 @@ exports.deleteVideos = (req, res, next)=>{
         if (error){ return res.status(500).send({error:error})}
 
         conn.query(
-            `DELETE FROM videos
-             WHERE id = ?`,
-
+            `SELECT * FROM videos WHERE id = ?`,
             [req.body.id],
 
-            (error, result, fields)=>{
-                conn.release();
-                if (error){ return res.status(500).send({error:error})}
-                const response = {
-                    mensagem: 'Video removido com sucesso',
-                    request:{
-                        tipo: 'POST',
-                        descricao: 'Insere um video',
-                        url: 'http://localhost:3000/videos',
-                        body: {
-                            titulo: 'String',
-                            url: 'String',
-                            categorias_id: 'Number',
-                            descricao : 'String'
-                        }
-                    }
+            (error, result)=>{
+                if(result.length === 0 ){
+                    return res.status(404).send({
+                        mensagem: 'Vídeo não encontrado'
+                    })
                 }
-                return res.status(202).send(response)
-        })        
+                else{
+                    conn.query(
+                        `DELETE FROM videos
+                         WHERE id = ?`,
+            
+                        [req.body.id],
+            
+                        (error, result, fields)=>{
+                            conn.release();
+                            if (error){ return res.status(500).send({error:error})}
+                            const response = {
+                                mensagem: 'Video removido com sucesso',
+                                request:{
+                                    tipo: 'POST',
+                                    descricao: 'Insere um video',
+                                    url: 'http://localhost:3000/videos',
+                                    body: {
+                                        titulo: 'String',
+                                        url: 'String',
+                                        categorias_id: 'Number',
+                                        descricao : 'String'
+                                    }
+                                }
+                            }
+                            return res.status(202).send(response)
+                    })
+                }
+            }
+        )        
     });
 }
