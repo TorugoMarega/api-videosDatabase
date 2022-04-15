@@ -1,0 +1,210 @@
+const mysql = require('../mysql').pool;
+
+exports .getCategorias = (req, res, next)=>{  
+    mysql.getConnection((error, conn) => {
+        if (error){ return res.status(500).send({error:error})}
+        conn.query(
+            `SELECT * FROM categorias`,
+            (error, result, fields)=>{
+                conn.release();
+                if (error){ return res.status(500).send({error:error})}
+                const response = {
+                    quantidade: result.length,
+                    categorias: result.map(categoria=>{
+                        return{
+                            id_categoria: categoria.id,
+                            nome_categoria: categoria.titulo,
+                            cor : categoria.cor,
+                            request:{
+                                tipo: 'GET',
+                                descricao: 'Retorna os detalhes de uma categoria específica',
+                                url: 'http://localhost:3000/categorias/' + categoria.id
+                            }
+            
+                        }
+                    })
+                } 
+                res.status(200).send({response})
+            }
+        )
+    })
+}
+
+exports.postCategorias = (req, res, next)=>{
+    mysql.getConnection((error, conn)=>{
+        if (error){ return res.status(500).send({error:error})}
+
+        if(req.body.titulo == undefined || req.body.cor == undefined){
+            res.status(400).send({
+                mensagem: "Os campos título e cor são obrigatórios"
+            })
+        }
+        else{
+            conn.query(
+                `INSERT INTO categorias ( titulo, cor) VALUES (?,?)`,
+                [req.body.titulo, 
+                 req.body.cor,
+                ],
+                (error, result, field) =>{
+                    conn.release();
+                    if (error){ return res.status(500).send({error:error})}      
+                    const response = {
+                        mensagem: 'Categoria inserida com sucesso',
+                        categoriaCriada:{
+                            id: result.insertId,
+                            titulo: req.body.titulo,
+                            cor: req.body.cor,
+                            request:{
+                                tipo: 'GET',
+                                descricao: 'Retorna todas as categorias',
+                                url: 'http://localhost:3000/categorias/'
+                            }
+                        } 
+                    }         
+                    return res.status(201).send(response);
+                }
+            )
+        }
+    })
+}
+
+exports.getUmaCategoria = (req, res, next)=>{
+    mysql.getConnection((error, conn) => {
+        if (error){ return res.status(500).send({error:error})}
+        conn.query(
+            `
+            SELECT * FROM categorias WHERE id = ?;
+            ` ,
+            [req.params.id],
+
+            (error, result, fields)=>{
+                conn.release;
+                if (error){ return res.status(500).send({error:error})}
+
+                if(result.length === 0){
+                    return res.status(404).send({
+                        mensagem: 'Categoria não encontrada'
+                    })
+                }
+
+                const response = {
+                    categoria:{
+                        id_categoria: result[0].id,
+                        nome_categoria: result[0].titulo,
+                        cor: result[0].descricao,
+                        cor_categoria: result[0].cor,
+                        request:{
+                            tipo: 'GET',
+                            descricao: 'Retorna todas as categorias',
+                            url: 'http://localhost:3000/categorias/'
+                        }
+                    } 
+                } 
+                return res.status(200).send(response)
+            }
+        )
+    });
+}
+
+exports.patchCategorias = (req, res, next)=>{
+    mysql.getConnection((error, conn) => {
+        if (error){ return res.status(500).send({error:error})}
+        conn.query(
+            `SELECT * FROM categorias WHERE id = ?`,
+            [req.body.id],
+
+            (error, result, fields) =>{
+                if (error){ return res.status(500).send({error:error})}
+                if(result.length === 0){
+                    return res.status(404).send({
+                        mensagem: 'Categoria não encontrada'
+                    })
+                }
+                else{
+                    if (req.body.titulo == undefined){
+                        req.body.titulo = result[0].titulo;
+                        //console.log('titulo param: '+req.body.titulo) //testa substituição da requisicao
+                    }
+                    if (req.body.cor == undefined){
+                        req.body.cor = result[0].cor;
+                        //console.log('url param: '+req.body.url)
+                    }
+                    conn.query(
+                        `UPDATE categorias
+                            SET titulo = ?,
+                                cor = ?
+                         WHERE id = ?`,
+                        [
+                            req.body.titulo, 
+                            req.body.cor,
+                            req.body.id
+                        ],
+                        (error, result, fields)=>{
+                            conn.release();
+                            if (error){ return res.status(500).send({error:error})}
+            
+                            const response = {
+                                mensagem: 'Categoria alterada com sucesso',
+                                categoriaAtualizada:{
+                                    id: req.body.id,
+                                    titulo: req.body.titulo,
+                                    cor: req.body.cor,
+                                    request:{
+                                        tipo: 'GET',
+                                        descricao: 'Retorna os detalhes de uma categoria específico',
+                                        url: 'http://localhost:3000/categorias/' + req.body.id
+                                    }
+                                } 
+                            }         
+                            return res.status(202).send(response);
+                        }
+                    )
+                }
+            }
+        )
+    });
+}
+
+exports.deleteCategorias = (req, res, next)=>{
+    mysql.getConnection((error, conn) => {
+        if (error){ return res.status(500).send({error:error})}
+
+        conn.query(
+            `SELECT * FROM categorias WHERE id = ?`,
+            [req.body.id],
+
+            (error, result)=>{
+                if(result.length === 0 ){
+                    return res.status(404).send({
+                        mensagem: 'Categoria não encontrada'
+                    })
+                }
+                else{
+                    conn.query(
+                        `DELETE FROM categorias
+                         WHERE id = ?`,
+            
+                        [req.body.id],
+            
+                        (error, result, fields)=>{
+                            conn.release();
+                            if (error){ return res.status(500).send({error:error})}
+                            const response = {
+                                mensagem: 'Categoria removida com sucesso',
+                                request:{
+                                    tipo: 'POST',
+                                    descricao: 'Insere uma categoria',
+                                    url: 'http://localhost:3000/categorias',
+                                    body: {
+                                        titulo: 'String',
+                                        cor: 'String'
+                                    }
+                                }
+                            }
+                            return res.status(202).send(response)
+                    })
+                }
+            }
+        )        
+    });
+}

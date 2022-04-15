@@ -38,21 +38,27 @@ exports .getVideos = (req, res, next)=>{
 exports.postVideos = (req, res, next)=>{
     mysql.getConnection((error, conn)=>{
         if (error){ return res.status(500).send({error:error})}
-
+        
+        if(req.body.categorias_id == undefined){ //define a categoria 1 como padrão caso não seja especificado o id na criação
+            req.body.categorias_id = 1
+        }
         conn.query(
+            
             `INSERT INTO videos ( titulo, url, categorias_id,descricao) VALUES (?,?,?,?)`,
             [req.body.titulo, 
              req.body.url,
              req.body.categorias_id,
              req.body.descricao
             ],
+
             (error, result, field) =>{
+                console.log(result)
                 conn.release();
                 if (error){ return res.status(500).send({error:error})}      
                 const response = {
                     mensagem: 'Video inserido com sucesso',
                     videoCriado:{
-                        id: result.id,
+                        id: result.insertId,
                         titulo: req.body.titulo,
                         url: req.body.url,
                         id_categoria: req.body.categorias_id,

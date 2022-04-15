@@ -4,6 +4,7 @@ const morgan = require ('morgan');
 const bodyParser = require('body-parser');
 
 const rotaVideos = require('./routes/videos');
+const rotaCategorias = require('./routes/categorias');
 const rotaPedidos = require('./routes/pedidos');
 const rotaUsuarios = require('./routes/usuarios');
 
@@ -29,8 +30,9 @@ app.use((req, res, next)=>{
 })
 
 app.use('/videos', rotaVideos);
+app.use('/categorias', rotaCategorias);
 app.use('/pedidos', rotaPedidos);
-app.use('/usuarios', rotaUsuarios)
+app.use('/usuarios', rotaUsuarios);
 
 //Quando não encontrar rota
 app.use((req, res, next) => {
