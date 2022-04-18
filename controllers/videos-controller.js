@@ -1,6 +1,6 @@
 const mysql = require('../mysql').pool;
 
-exports .getVideos = (req, res, next)=>{  
+exports.getVideos = (req, res, next)=>{  
     mysql.getConnection((error, conn) => {
         if (error){ return res.status(500).send({error:error})}
         conn.query(
@@ -236,5 +236,52 @@ exports.deleteVideos = (req, res, next)=>{
                 }
             }
         )        
+    });
+}
+
+exports.getVideosPorTitulo = (req, res, next)=>{
+    mysql.getConnection((error, conn) => {
+        if (error){ return res.status(500).send({error:error})}
+        conn.query(
+            `
+            SELECT v.id id, v.titulo titulo_video, descricao, url, categorias_id, c.titulo nome_categoria, cor
+            FROM videos v INNER JOIN categorias c
+            ON v.categorias_id = c.id
+            WHERE v.titulo LIKE '%${req.query.titulo}%'
+            ORDER BY v.id ASC;
+            ` ,
+            [req.query.titulo],
+
+            (error, result, fields)=>{
+                conn.release;
+                if (error){ return res.status(500).send({error:error})}
+
+                if(result.length === 0){
+                    return res.status(404).send({
+                        mensagem: 'Nenhum vídeo foi encontrado'
+                    })
+                }
+
+                const response = {
+                    quantidade: result.length,
+                    videos:result.map(video=>{
+                        return {
+                            id_video: video.id_video,
+                            nome_video: video.titulo_video,
+                            descricao_video: video.descricao,
+                            id_categoria: video.categorias_id,
+                            nome_categoria: video.titulo_categoria,
+                            cor_categoria: video.cor,
+                            request:{
+                                tipo: 'GET',
+                                descricao: 'Retorna todas as categorias',
+                                url: 'http://localhost:3000/categorias/'
+                            }
+                        }
+                    }) 
+                } 
+                return res.status(200).send(response)
+            }
+        )
     });
 }

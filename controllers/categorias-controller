@@ -91,7 +91,6 @@ exports.getUmaCategoria = (req, res, next)=>{
                     categoria:{
                         id_categoria: result[0].id,
                         nome_categoria: result[0].titulo,
-                        cor: result[0].descricao,
                         cor_categoria: result[0].cor,
                         request:{
                             tipo: 'GET',
@@ -208,3 +207,53 @@ exports.deleteCategorias = (req, res, next)=>{
         )        
     });
 }
+
+
+exports.getVideosPorCategoria = (req, res, next)=>{
+    mysql.getConnection((error, conn) => {
+        if (error){ return res.status(500).send({error:error})}
+        conn.query(
+            `
+            SELECT v.id id_video, v.titulo titulo_video, categorias_id, descricao, c.titulo titulo_categoria, cor 
+            FROM videos v
+            INNER JOIN categorias c
+            ON  v.categorias_id = c.id
+            WHERE categorias_id = ?
+            ORDER  BY id_video ASC;
+            ` ,
+            [req.params.id],
+
+            (error, result, fields)=>{
+                conn.release;
+                if (error){ return res.status(500).send({error:error})}
+
+                if(result.length === 0){
+                    return res.status(404).send({
+                        mensagem: 'Categoria não encontrada'
+                    })
+                }
+
+                const response = {
+                    quantidade: result.length,
+                    videos:result.map(video=>{
+                        return {
+                            id_video: video.id_video,
+                            nome_video: video.titulo_video,
+                            descricao_video: video.descricao,
+                            id_categoria: video.categorias_id,
+                            nome_categoria: video.titulo_categoria,
+                            cor_categoria: video.cor,
+                            request:{
+                                tipo: 'GET',
+                                descricao: 'Retorna todas as categorias',
+                                url: 'http://localhost:3000/categorias/'
+                            }
+                        }
+                    }) 
+                } 
+                return res.status(200).send(response)
+            }
+        )
+    });
+}
+

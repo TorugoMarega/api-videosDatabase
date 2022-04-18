@@ -30,12 +30,17 @@ const upload = multer({
     fileFilter: fileFilter
 });
 
+
+
 // retorna todos os videos
 router.get('/', VideosController.getVideos);
 
 // insere (posta) um novo video
 //router.post('/',login.obrigatorio, upload.single('produto_imagem'), VideosController.postProdutos);
 router.post('/', VideosController.postVideos);
+
+//retorna os videos pelo título
+router.get('/search/',VideosController.getVideosPorTitulo);
 
 // retorna os dados de um video
 router.get('/:id',VideosController.getUmVideo);
@@ -47,5 +52,8 @@ router.patch('/', VideosController.patchVideos);
 //deleta um video
 /* router.delete('/',login.obrigatorio, VideosController.deleteProduto);
  */router.delete('/', VideosController.deleteVideos);
+
+
+
 
 module.exports = router;

@@ -30,22 +30,29 @@ const upload = multer({
     fileFilter: fileFilter
 });
 
-// retorna todos os videos
+//retorna os videos de uma categoria específica
+router.get('/:id/videos', CategoriasController.getVideosPorCategoria);
+
+
+// retorna todas as categorias
 router.get('/', CategoriasController.getCategorias);
 
-// insere (posta) um novo video
+// insere (posta) uma nova categoria
 //router.post('/',login.obrigatorio, upload.single('produto_imagem'), VideosController.postProdutos);
 router.post('/', CategoriasController.postCategorias);
 
-// retorna os dados de um video
+// retorna os dados de uma categoria
 router.get('/:id',CategoriasController.getUmaCategoria);
 
-//altera um video
+//altera um categoria
 /* router.patch('/',login.obrigatorio, VideosController.patchProduto); */
 router.patch('/', CategoriasController.patchCategorias);
 
-//deleta um video
+//deleta uma categoria
 /* router.delete('/',login.obrigatorio, VideosController.deleteProduto);
- */router.delete('/', CategoriasController.deleteCategorias);
+ */
+router.delete('/', CategoriasController.deleteCategorias);
+
+
 
 module.exports = router;
