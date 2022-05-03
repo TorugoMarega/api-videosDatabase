@@ -2,11 +2,20 @@ const express = require('express');
 const app = express();
 const morgan = require ('morgan');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 
 const rotaVideos = require('./routes/videos');
 const rotaCategorias = require('./routes/categorias');
 const rotaPedidos = require('./routes/pedidos');
 const rotaUsuarios = require('./routes/usuarios');
+
+app.use(cors())
+
+app.get('/', (req, res)=>{
+    return res.json([
+        { mensagem: 'Bem vindo'}
+    ])
+})
 
 app.use(morgan('dev'));
 

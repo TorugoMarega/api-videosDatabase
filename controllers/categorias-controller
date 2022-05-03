@@ -3,29 +3,81 @@ const mysql = require('../mysql').pool;
 exports .getCategorias = (req, res, next)=>{  
     mysql.getConnection((error, conn) => {
         if (error){ return res.status(500).send({error:error})}
+        
         conn.query(
-            `SELECT * FROM categorias`,
+            `
+            SELECT count(id) qtde_linhas
+            FROM categorias
+            `,
             (error, result, fields)=>{
-                conn.release();
                 if (error){ return res.status(500).send({error:error})}
-                const response = {
-                    quantidade: result.length,
-                    categorias: result.map(categoria=>{
-                        return{
-                            id_categoria: categoria.id,
-                            nome_categoria: categoria.titulo,
-                            cor : categoria.cor,
-                            request:{
-                                tipo: 'GET',
-                                descricao: 'Retorna os detalhes de uma categoria específica',
-                                url: 'http://localhost:3000/categorias/' + categoria.id
-                            }
-            
+                if(result.length === 0){
+                    return res.status(404).send({
+                        mensagem:"Nenhuma categoria cadastrada"
+                    }) 
+                }
+
+                else{
+                    const qtde_linhas = result[0].qtde_linhas
+                    
+                    const limit = 5//VIDEOS POR PAGINA
+                    let  pag_atual = req.query.page //pega a pagina na query string
+                    
+                    pag_total = Math. ceil(qtde_linhas/limit)
+                    
+                    if(pag_atual > pag_total){
+                        return res.status(404).send({
+                        mensagem:"Página não encontrada",
+                        quantidade_paginas:pag_total
+                        }) 
+                    }
+
+                    if(pag_atual   == 0){//Se a pag for 0 então troca para 1
+                        pag_atual = 1
+                    }
+
+                    const inicio = (pag_atual*limit)-limit;
+
+                    if(pag_atual == undefined){
+                        var sql_code = `
+                            SELECT * 
+                            FROM categorias
+                        `
+                    }else{
+                        var sql_code = `
+                            SELECT * 
+                            FROM categorias
+                            LIMIT ${inicio},${limit}
+                        `
+                    }
+
+                    conn.query(
+                        sql_code,
+                        (error, result, fields)=>{
+                            conn.release();
+                            if (error){ return res.status(500).send({error:error})}
+                            const response = {
+                                quantidade: result.length,
+                                categorias: result.map(categoria=>{
+                                    return{
+                                        id_categoria: categoria.id,
+                                        nome_categoria: categoria.titulo,
+                                        cor : categoria.cor,
+                                        request:{
+                                            tipo: 'GET',
+                                            descricao: 'Retorna os detalhes de uma categoria específica',
+                                            url: 'http://localhost:3000/categorias/' + categoria.id
+                                        }
+                        
+                                    }
+                                })
+                            } 
+                            res.status(200).send({response})
                         }
-                    })
-                } 
-                res.status(200).send({response})
+                    )
+                }
             }
+            
         )
     })
 }
@@ -126,7 +178,6 @@ exports.patchCategorias = (req, res, next)=>{
                     }
                     if (req.body.cor == undefined){
                         req.body.cor = result[0].cor;
-                        //console.log('url param: '+req.body.url)
                     }
                     conn.query(
                         `UPDATE categorias
@@ -229,7 +280,7 @@ exports.getVideosPorCategoria = (req, res, next)=>{
 
                 if(result.length === 0){
                     return res.status(404).send({
-                        mensagem: 'Categoria não encontrada'
+                        mensagem: 'Nenhum resultado encontrado'
                     })
                 }
 

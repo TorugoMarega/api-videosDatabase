@@ -1,6 +1,104 @@
 const mysql = require('../mysql').pool;
 
+//get videos com paginacao
 exports.getVideos = (req, res, next)=>{  
+    mysql.getConnection((error, conn) => {
+        if (error){ return res.status(500).send({error:error})}
+        conn.query(
+            `
+            SELECT count(id) qtde_linhas
+            FROM videos
+            `,
+            (error, result, fields)=>{
+                if (error){ return res.status(500).send({error:error})}
+                if(result.length === 0){
+                    return res.status(404).send({
+                        mensagem:"Nenhum video cadastrado"
+                    }) 
+                }
+                
+                else{
+                    const qtde_linhas = result[0].qtde_linhas
+                    
+                    const limit = 5//VIDEOS POR PAGINA
+                    let  pag_atual = req.query.page //pega a pagina na query string
+                    
+                    pag_total = Math.ceil(qtde_linhas/limit)
+                   
+                    if(pag_atual > pag_total){
+                        return res.status(404).send({
+                        mensagem:"Página não encontrada",
+                        quantidade_paginas:pag_total
+                        }) 
+                    }
+                    
+                    
+
+                    if(pag_atual   == 0){//Se a pag for 0 então troca para 1
+                        pag_atual = 1
+                    }
+                    const inicio = (pag_atual*limit)-limit;
+                    
+                    if(pag_atual == undefined){
+                        var sql_code = `
+                            SELECT v.id id, v.titulo, descricao, url, categorias_id, c.titulo nome_categoria, cor
+                            FROM videos v INNER JOIN categorias c
+                            ON v.categorias_id = c.id
+                        `
+                    }else{
+                        var sql_code = `
+                            SELECT v.id id, v.titulo, descricao, url, categorias_id, c.titulo nome_categoria, cor
+                            FROM videos v INNER JOIN categorias c
+                            ON v.categorias_id = c.id
+                            LIMIT ${inicio},${limit}
+                        `
+                    }
+                     conn.query(
+                        sql_code,
+
+                        (error, result, fields)=>{
+                            conn.release();
+                            if (error){ return res.status(500).send({error:error})}
+            
+                            if(result.length === 0){
+                                return res.status(404).send({
+                                    mensagem:"Nenhum video cadastrado"
+                                })
+                            }
+
+
+                            const response = {
+                                quantidade: result.length,
+                                videos: result.map(video=>{
+                                    return{
+                                        pagina:pag_atual,
+                                        id_video: video.id,
+                                        titulo: video.titulo,
+                                        url : video.url,
+                                        descricao: video.descricao,
+                                        id_categoria: video.categorias_id,
+                                        nome_categoria: video.nome_categoria,
+                                        request:{
+                                            tipo: 'GET',
+                                            descricao: 'Retorna os detalhes de um video específico',
+                                            url: 'http://localhost:3000/videos/' + video.id
+                                        }
+                        
+                                    }
+                                })
+                            } 
+                            res.status(200).send({response})
+                        }
+                    ) 
+
+
+                }
+            }
+        )
+    })
+}
+
+/* exports.getVideos = (req, res, next)=>{  
     mysql.getConnection((error, conn) => {
         if (error){ return res.status(500).send({error:error})}
         conn.query(
@@ -10,6 +108,12 @@ exports.getVideos = (req, res, next)=>{
             (error, result, fields)=>{
                 conn.release();
                 if (error){ return res.status(500).send({error:error})}
+
+                if(result.length === 0){
+                    return res.status(404).send({
+                        mensagem:"Nenhum video cadastrado"
+                    })
+                }
                 const response = {
                     quantidade: result.length,
                     videos: result.map(video=>{
@@ -33,7 +137,7 @@ exports.getVideos = (req, res, next)=>{
             }
         )
     })
-}
+} */
 
 exports.postVideos = (req, res, next)=>{
     mysql.getConnection((error, conn)=>{
@@ -284,4 +388,48 @@ exports.getVideosPorTitulo = (req, res, next)=>{
             }
         )
     });
+}
+
+exports.getVideosFree = (req, res, next)=>{  
+    mysql.getConnection((error, conn) => {
+        if (error){ return res.status(500).send({error:error})}
+        conn.query(
+            `SELECT v.id id, v.titulo, descricao, url, categorias_id, c.titulo nome_categoria, cor
+            FROM videos v INNER JOIN categorias c
+            ON v.categorias_id = c.id
+            ORDER BY RAND()
+            LIMIT 5;
+            `, 
+            (error, result, fields)=>{
+                conn.release();
+                if (error){ return res.status(500).send({error:error})}
+
+                if(result.length === 0){
+                    return res.status(404).send({
+                        mensagem:"Nenhum video cadastrado"
+                    })
+                }
+                const response = {
+                    quantidade: result.length,
+                    videos: result.map(video=>{
+                        return{
+                            id_video: video.id,
+                            titulo: video.titulo,
+                            url : video.url,
+                            descricao: video.descricao,
+                            id_categoria: video.categorias_id,
+                            nome_categoria: video.nome_categoria,
+                            request:{
+                                tipo: 'GET',
+                                descricao: 'Retorna os detalhes de um video específico',
+                                url: 'http://localhost:3000/videos/' + video.id
+                            }
+            
+                        }
+                    })
+                } 
+                res.status(200).send({response})
+            }
+        )
+    })
 }
