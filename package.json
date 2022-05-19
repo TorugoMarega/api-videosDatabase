@@ -4,8 +4,10 @@
   "description": "Teste de REST API ",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "test": "jest",
+    "start": "nodemon server.js",
+    "lint": "./node_modules/.bin/eslint .",
+    "lint:fix": "./node_modules/.bin/eslint . --fix"
   },
   "keywords": [
     "node",
@@ -26,6 +28,12 @@
     "mysql": "^2.18.1"
   },
   "devDependencies": {
+    "eslint": "^8.14.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.2.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "jest": "^28.0.3",
     "nodemon": "^2.0.15"
   }
 }

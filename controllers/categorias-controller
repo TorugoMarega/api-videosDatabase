@@ -1,8 +1,9 @@
-const mysql = require('../mysql').pool;
+const mysql = require('../mysql').pool
 
-exports .getCategorias = (req, res, next)=>{  
-    mysql.getConnection((error, conn) => {
-        if (error){ return res.status(500).send({error:error})}
+// Get categorias com paginacao
+exports.getCategorias = (req, res, next)=> {
+  mysql.getConnection((error, conn) => {
+    if (error){ return res.status(500).send({error:error})}
         
         conn.query(
             `
@@ -18,33 +19,35 @@ exports .getCategorias = (req, res, next)=>{
                 }
 
                 else{
-                    const qtde_linhas = result[0].qtde_linhas
+                    const qtdeLinhas = result[0].qtde_linhas
                     
-                    const limit = 5//VIDEOS POR PAGINA
-                    let  pag_atual = req.query.page //pega a pagina na query string
+                    const limit = 5//CATEGORIAS POR PAGINA
+                    let  pagAtual = req.query.page //pega a pagina na query string
                     
-                    pag_total = Math. ceil(qtde_linhas/limit)
+                    pag_total = Math. ceil(qtdeLinhas/limit)
                     
-                    if(pag_atual > pag_total){
+                    if(pagAtual > pag_total){
                         return res.status(404).send({
                         mensagem:"Página não encontrada",
                         quantidade_paginas:pag_total
                         }) 
                     }
 
-                    if(pag_atual   == 0){//Se a pag for 0 então troca para 1
-                        pag_atual = 1
+                    if(pagAtual   === 0){//Se a pag for 0 então troca para 1
+                        pagAtual = 1
                     }
 
-                    const inicio = (pag_atual*limit)-limit;
+                    const inicio = (pagAtual*limit)-limit;
+                    
+                    let sqlCode
 
-                    if(pag_atual == undefined){
-                        var sql_code = `
+                    if(pagAtual === undefined){
+                         sqlCode = `
                             SELECT * 
                             FROM categorias
                         `
                     }else{
-                        var sql_code = `
+                         sqlCode = `
                             SELECT * 
                             FROM categorias
                             LIMIT ${inicio},${limit}
@@ -52,7 +55,7 @@ exports .getCategorias = (req, res, next)=>{
                     }
 
                     conn.query(
-                        sql_code,
+                        sqlCode,
                         (error, result, fields)=>{
                             conn.release();
                             if (error){ return res.status(500).send({error:error})}
@@ -86,7 +89,7 @@ exports.postCategorias = (req, res, next)=>{
     mysql.getConnection((error, conn)=>{
         if (error){ return res.status(500).send({error:error})}
 
-        if(req.body.titulo == undefined || req.body.cor == undefined){
+        if(req.body.titulo === undefined || req.body.cor === undefined){
             res.status(400).send({
                 mensagem: "Os campos título e cor são obrigatórios"
             })
@@ -125,7 +128,11 @@ exports.getUmaCategoria = (req, res, next)=>{
         if (error){ return res.status(500).send({error:error})}
         conn.query(
             `
-            SELECT * FROM categorias WHERE id = ?;
+            SELECT c.titulo,c.id, cor, count(v.id) qtde_videos
+            FROM  categorias c inner join videos v
+            on c.id = v.categorias_id
+            where c.id = ?
+            GROUP BY c.titulo
             ` ,
             [req.params.id],
 
@@ -144,6 +151,7 @@ exports.getUmaCategoria = (req, res, next)=>{
                         id_categoria: result[0].id,
                         nome_categoria: result[0].titulo,
                         cor_categoria: result[0].cor,
+                        qtde_videos: result[0].qtde_videos,
                         request:{
                             tipo: 'GET',
                             descricao: 'Retorna todas as categorias',
@@ -172,11 +180,11 @@ exports.patchCategorias = (req, res, next)=>{
                     })
                 }
                 else{
-                    if (req.body.titulo == undefined){
+                    if (req.body.titulo === undefined){
                         req.body.titulo = result[0].titulo;
                         //console.log('titulo param: '+req.body.titulo) //testa substituição da requisicao
                     }
-                    if (req.body.cor == undefined){
+                    if (req.body.cor === undefined){
                         req.body.cor = result[0].cor;
                     }
                     conn.query(
@@ -307,4 +315,3 @@ exports.getVideosPorCategoria = (req, res, next)=>{
         )
     });
 }
-
