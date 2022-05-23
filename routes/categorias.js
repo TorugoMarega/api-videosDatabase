@@ -9,7 +9,7 @@ const CategoriasController = require('../controllers/categorias-controller')
 router.get('/:id/videos',login.obrigatorio,CategoriasController.getVideosPorCategoria)
 
 // retorna todas as categorias
-router.get('/', CategoriasController.getCategorias)
+router.get('/',login.obrigatorio,CategoriasController.getCategorias)
 
 // insere (posta) uma nova categoria
 router.post('/', CategoriasController.postCategorias)

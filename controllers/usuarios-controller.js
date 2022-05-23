@@ -18,8 +18,8 @@ exports.cadastrarUsuario = (req, res, next) => {
               return res.status(500).send({ error: errBcrypt })
             }
             //INSERE OS DADOS DO USUÁRIO E O RESULTADO DA CRIPTOGRAFIA DA SENHA
-            conn.query('INSERT INTO usuarios (email, senha) VALUES(?, ?)',
-              [req.body.email, hash],
+            conn.query('INSERT INTO usuarios (email, senha, nome) VALUES(?, ?, ?)',
+              [req.body.email, hash, req.body.nome],
               (error, results) => {
                 conn.release()
                 if (error) { return res.status(500).send({ error }) }
@@ -27,7 +27,8 @@ exports.cadastrarUsuario = (req, res, next) => {
                   mensagem: 'Usuário criado com sucesso',
                   usuarioCriado: {
                     id_usuario: results.insertId,
-                    email: req.body.email
+                    email: req.body.email,
+                    nome: req.body.nome
                   }
                 }
                 return res.status(201).send(response)
@@ -46,18 +47,19 @@ exports.Login = (req, res, next) => {
       conn.release()
       if (error) { return res.status(500).send({ error }) }
       if (results.length < 1) {
-        return res.status(404).send({ mensagem: 'Usuário e/ou senha incorretos' })
+        return res.status(404).send({ mensagem: 'Usuário não encontrado' })
       }
-      //COMPARA O HASH DA SENHA PASSADA NA REQUISIÇÃO COM O HASH SALVO NO BANCO DE DADOS
+      //COMPARA O HASH DA SENHA PASSADA NO CORPO DA REQUISIÇÃO COM O HASH SALVO NO BANCO DE DADOS
       bcrypt.compare(req.body.senha, results[0].senha, (err, result) => {
         if (err) {
           return res.status(401).send({ mensagem: 'Falha na autenticação' })
         }
         if (result) {
-          const token = jwt.sign({ // cria o token
+          // cria o token
+          const token = jwt.sign({ 
             id_usuario: results[0].id_usuario,
             email: results[0].email
-          }, process.env.JWT_KEY, // variavel de ambiente
+          }, process.env.JWT_KEY, // CHAVE DE ASSINATURA PRIVADA (PAYLOAD[]
           {
             expiresIn: '1h'// token expira em 1h obrigando a fazer o login novamente
           })
