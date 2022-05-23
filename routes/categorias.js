@@ -6,10 +6,10 @@ const login = require('../middleware/login')
 const CategoriasController = require('../controllers/categorias-controller')
 
 // retorna os videos de uma categoria específica
-router.get('/:id/videos',login.obrigatorio,CategoriasController.getVideosPorCategoria)
+router.get('/:id/videos',CategoriasController.getVideosPorCategoria)
 
 // retorna todas as categorias
-router.get('/',login.obrigatorio,CategoriasController.getCategorias)
+router.get('/',CategoriasController.getCategorias)
 
 // insere (posta) uma nova categoria
 router.post('/', CategoriasController.postCategorias)
